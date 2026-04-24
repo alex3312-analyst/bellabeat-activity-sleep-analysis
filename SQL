@@ -1,0 +1,408 @@
+CREATE DATABASE bellabeat_leaf;
+USE bellabeat_leaf;
+
+CREATE TABLE dailyActivity (
+    user_id BIGINT,
+    activity_date DATE,
+    total_steps INT,
+    total_distance FLOAT,
+    tracker_distance FLOAT,
+    loggedactivitiesdistance FLOAT,
+    veryactivedistance FLOAT,
+    moderatelyactivedistance FLOAT,
+    lightactivedistance FLOAT,
+    sedentaryactivedistance FLOAT,
+    veryactiveminutes INT,
+    fairlyactiveminutes INT,
+    lightlyactiveminutes INT,
+    sedentaryminutes INT,
+    calories INT
+);
+
+CREATE TABLE Sleep (
+    user_id BIGINT,
+    date_sleep DATE,
+    time_sleep TIME,
+    value INT,
+    log_id BIGINT
+);
+
+LOAD DATA LOCAL INFILE 'C:/minutesleepcleaned.csv'
+INTO TABLE Sleep
+FIELDS TERMINATED BY ';'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(user_id, date_sleep, time_sleep, value, log_id);
+
+SELECT COUNT(*) FROM Sleep;
+
+TRUNCATE TABLE Sleep;
+
+LOAD DATA LOCAL INFILE 'C:/minutesleepcleaned.csv'
+INTO TABLE Sleep
+FIELDS TERMINATED BY ';'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(user_id, date_sleep, time_sleep, value, log_id);
+
+SELECT COUNT(*) FROM Sleep;
+
+DESCRIBE Sleep;
+
+SELECT COUNT(DISTINCT user_id) AS unique_users
+FROM Sleep;
+
+SELECT user_id, COUNT(*) AS records
+FROM Sleep
+GROUP BY user_id
+ORDER BY records DESC;
+
+SELECT value, COUNT(*) AS count
+FROM SLeep
+GROUP BY VALUE;
+
+SELECT user_id, COUNT(DISTINCT date_sleep) AS days_with_sleep_data
+FROM Sleep
+GROUP BY user_id
+ORDER BY days_with_sleep_data DESC;
+
+SELECT 
+    user_id,
+    date_sleep,
+    SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) AS minutes_asleep,
+    SUM(CASE WHEN value = 2 THEN 1 ELSE 0 END) AS minutes_restless,
+    SUM(CASE WHEN value = 3 THEN 1 ELSE 0 END) AS minutes_awake
+FROM Sleep
+GROUP BY user_id, date_sleep
+ORDER BY user_id, date_sleep;
+
+TRUNCATE TABLE Sleep;
+
+LOAD DATA LOCAL INFILE 'C:/minutesleepcleaned.csv'
+INTO TABLE Sleep
+FIELDS TERMINATED BY ';'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(user_id, date_sleep, time_sleep, value, log_id);
+
+ALTER TABLE Sleep MODIFY date_sleep VARCHAR(20);
+
+UPDATE Sleep
+SET date_sleep = STR_TO_DATE(date_sleep, '%d/%m/%Y');
+
+
+ALTER TABLE Sleep MODIFY date_sleep DATE;
+
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE Sleep
+SET date_sleep = STR_TO_DATE(date_sleep, '%d/%m/%Y');
+
+SELECT date_sleep, HEX(date_sleep)
+FROM Sleep
+LIMIT 20;
+
+TRUNCATE TABLE Sleep;
+
+ALTER TABLE Sleep MODIFY date_sleep VARCHAR(20);
+
+LOAD DATA LOCAL INFILE 'C:/minutesleepcleaned.csv'
+INTO TABLE Sleep
+FIELDS TERMINATED BY ';'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(user_id, date_sleep, time_sleep, value, log_id);
+
+DESCRIBE Sleep;
+
+SELECT date_sleep
+FROM Sleep;
+
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE Sleep
+SET date_sleep = STR_TO_DATE(date_sleep, '%d/%m/%Y');
+
+ALTER TABLE Sleep MODIFY date_sleep DATE;
+
+SELECT date_sleep
+FROM Sleep
+LIMIT 20;
+
+CREATE TABLE SleepDaily AS
+SELECT 
+    user_id,
+    date_sleep,
+    SUM(CASE WHEN value = 1 THEN 1 ELSE 0 END) AS minutes_asleep,
+    SUM(CASE WHEN value = 2 THEN 1 ELSE 0 END) AS minutes_restless,
+    SUM(CASE WHEN value = 3 THEN 1 ELSE 0 END) AS minutes_awake,
+    COUNT(*) AS total_minutes_in_bed
+FROM Sleep
+GROUP BY user_id, date_sleep;
+
+SELECT *
+FROM SleepDaily
+ORDER BY user_id, date_sleep
+LIMIT 20;
+
+SELECT 
+    MIN(date_sleep) AS primer_dia,
+    MAX(date_sleep) AS ultimo_dia,
+    COUNT(*) AS total_registros
+FROM SleepDaily;
+
+SELECT *
+FROM SleepDaily
+ORDER BY total_minutes_in_bed DESC
+LIMIT 10;
+
+CREATE TABLE SleepActivity AS
+SELECT
+	a.user_id,
+    a.activity_date AS date,
+    a.total_steps,
+    a.total_distance,
+    a.calories,
+    s.minutes_asleep,
+    s.minutes_restless,
+    s.minutes_awake,
+    s.total_minutes_in_bed
+FROM dailyActivity a
+INNER JOIN SleepDaily s
+	on a.user_id = s.user_id
+    AND a.activity_date = s.date_sleep;
+
+SELECT *
+FROM SleepActivity
+LIMIT 20;
+    
+SELECT COUNT(*) 
+FROM SleepActivity;
+
+SELECT *
+FROM SleepActivity
+ORDER BY user_id, date
+LIMIT 20;
+
+SELECT
+	AVG(total_steps) AS avg_steps,
+    AVG(minutes_asleep) AS avg_sleep
+FROM SleepActivity;
+
+SELECT user_id,
+	AVG(minutes_asleep) AS avg_sleep
+FROM SleepActivity
+GROUP BY user_id
+ORDER BY avg_sleep DESC;
+
+SELECT user_id,
+	   AVG(minutes_restless) AS avg_restless
+FROM SleepActivity
+GROUP BY user_id
+ORDER BY avg_restless DESC;
+
+SELECT 
+	user_id,
+    AVG(total_steps) AS avg_steps,
+    AVG(minutes_asleep) AS avg_sleep
+FROM SleePActivity
+GROUP BY user_id
+ORDER BY avg_sleep DESC; 
+
+SELECT *
+FROM dailyactivity
+WHERE user_id = 1844505072;
+
+SELECT *
+FROM SleepDaily
+WHERE user_id = 1844505072;
+
+SELECT 
+    user_id,
+    date,
+    total_steps,
+    calories,
+    minutes_asleep,
+    minutes_restless,
+    minutes_awake,
+    total_minutes_in_bed
+FROM SleepActivity
+WHERE 
+    total_steps = 0
+    AND minutes_asleep > 600 
+ORDER BY user_id, date;
+
+SELECT *,
+ CASE
+  WHEN total_steps = 0 AND minutes_asleep > 600
+  THEN 'OUTLIER'
+  ELSE 'NORMAL'
+ END AS status
+FROM SleepActivity;
+
+CREATE TABLE SleepActivityClean AS
+SELECT *
+FROM SleepActivity
+WHERE NOT (
+	total_steps = 0
+    AND minutes_asleep > 600
+);
+
+SELECT COUNT(*)
+FROM SleepActivityClean;
+
+SELECT *
+FROM SleepActivityClean
+ORDER BY user_id, date
+LIMIT 20;
+
+SELECT
+	(SELECT COUNT(*) FROM SleepActivity) AS original,
+    (SELECT COUNT(*) FROM SleepActivityClean) AS clean,
+    (SELECT COUNT(*) FROM SleepActivity) -
+    (SELECT COUNT(*) FROM SleepActivityClean) AS deleted;
+    
+SELECT
+	AVG(total_steps) AS avg_steps,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean;
+
+SELECT user_id,
+	AVG(total_steps) AS avg_steps,
+    AVG(minutes_asleep) AS avg_sleep
+FROM SleepActivityClean
+GROUP BY user_id
+ORDER BY avg_steps DESC;
+
+SELECT
+	CASE
+		WHEN total_steps < 5000 THEN 'Down'
+        WHEN total_steps BETWEEN 5000 AND 9999 THEN 'Reasonable' 
+        ELSE 'High'
+	END AS activity_level,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean
+GROUP BY activity_level
+ORDER BY avg_sleep DESC;
+
+SELECT
+	AVG(calories) AS avg_calories,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean;
+
+SELECT user_id,
+	AVG(calories) AS avg_calories,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean
+GROUP BY user_id
+ORDER BY avg_calories DESC;
+
+SELECT
+	CASE
+		WHEN calories < 1800 THEN 'Down'
+        WHEN calories BETWEEN 1800 AND 2399 THEN 'Reasonable'
+        ELSE 'High'
+	END AS calories_level,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean
+GROUP BY calories_level
+ORDER BY avg_sleep DESC;
+
+SELECT calories,
+		minutes_asleep
+FROM sleepactivityclean
+ORDER BY calories DESC;
+
+SELECT
+	DAYNAME(date) AS day_of_week,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean
+GROUP BY day_of_week
+ORDER BY avg_sleep DESC;
+
+SELECT DAYNAME(date) AS day_of_week,
+	AVG(total_steps) AS avg_steps
+FROM sleepactivityclean
+GROUP BY day_of_week
+ORDER BY avg_steps DESC;
+
+SELECT
+	DAYNAME(date) AS day_of_week,
+    AVG(minutes_asleep) AS avg_sleep,
+    AVG(total_steps) AS avg_steps
+FROM sleepactivityclean
+GROUP BY day_of_week
+ORDER BY avg_sleep DESC;
+
+SELECT user_id,
+	date,
+    minutes_asleep
+FROM sleepactivityclean
+WHERE minutes_asleep < 420
+ORDER  BY user_id, date;
+
+SELECT user_id,
+	COUNT(*) AS total_days,
+    SUM(CASE WHEN minutes_asleep < 420 THEN 1 ELSE 0 END) AS low_sleep_days,
+    ROUND(
+		SUM(CASE WHEN minutes_asleep <420 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2
+        ) AS low_sleep_percentage
+FROM SleepActivityClean
+GROUP BY user_id
+ORDER BY low_sleep_percentage DESC;
+
+SELECT
+	CASE
+		WHEN minutes_asleep < 420 THEN 'low_sleep'
+        ELSE 'good_sleep'
+        END AS sleep_category,
+        AVG(total_steps) AS avg_steps
+FROM SleepActivityClean
+GROUP BY sleep_category;
+
+SELECT
+	DAYNAME(date) AS day_of_the_week,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean
+WHERE minutes_asleep < 420
+GROUP BY day_of_the_week
+ORDER BY avg_sleep ASC;
+
+SELECT
+	AVG(total_steps) AS avg_steps,
+    AVG(calories) AS avg_calories,
+    AVG(minutes_asleep) AS avg_sleep,
+    AVG(total_minutes_in_bed) AS avg_total_minutes_in_bed
+FROM sleepactivityclean;
+
+SELECT
+	STDDEV(total_steps) AS sd_steps,
+    STDDEV(calories) AS sd_calories,
+    STDDEV(minutes_asleep) AS sd_sleep
+FROM sleepactivityclean;
+
+SELECT
+	CASE
+		WHEN total_steps < 5000 THEN 'Down'
+        WHEN total_steps BETWEEN 5000 AND 9999 THEN 'Reasonable'
+        ELSE 'High'
+	END AS activity_level,
+    COUNT(*) AS days
+FROM sleepactivityclean
+GROUP BY activity_level;
+
+SELECT
+	CASE
+		WHEN minutes_asleep < 420 THEN 'Insuffficient_Sleep'
+        ELSE 'Adequate_Sleep'
+	END AS sleep_category,
+	COUNT(*) AS days
+FROM sleepactivityclean
+GROUP BY sleep_category;
+
+SELECT 
+	AVG(total_steps) AS avg_steps,
+    AVG(minutes_asleep) AS avg_sleep
+FROM sleepactivityclean;
+
+
