@@ -1,1 +1,188 @@
+Bellabeat_Project_Report.md
 
+📌 Introduction
+Bellabeat is a technology company focused on women’s wellness.
+This project analyzes users’ physical activity, sleep patterns, and daily behaviors to identify habits, inconsistencies, and opportunities to improve overall well‑being.
+
+The analysis answers key questions such as:
+
+What are users’ general habits?
+
+What sleep and activity patterns emerge?
+
+What factors influence rest?
+
+What recommendations can improve wellness?
+
+Tools used:
+
+MySQL → data cleaning, transformation, analysis
+
+Excel → initial CSV inspection
+
+Tableau → final visualizations
+
+The project demonstrates skills in SQL, data cleaning, modeling, documentation, and insight generation.
+
+🧹 Data Preparation & Cleaning
+Cleaning goals
+Unify activity and sleep tables
+
+Fix date formats
+
+Remove duplicates
+
+Create new analytical fields
+
+Ensure consistency across daily records
+
+Key join query
+sql
+SELECT
+    a.id AS user_id,
+    a.activity_date AS date,
+    a.total_steps,
+    a.calories,
+    s.minutes_asleep,
+    s.minutes_restless,
+    s.minutes_awake,
+    s.total_minutes_in_bed
+FROM DailyActivity a
+INNER JOIN SleepDaily s
+    ON a.user_id = s.user_id
+    AND a.activity_date = s.date_sleep;
+This final table was saved as SleepActivityClean, the base for all analyses.
+
+📈 Analysis 1: Physical Activity
+Query
+sql
+SELECT
+    AVG(total_steps) AS avg_steps,
+    AVG(calories) AS avg_calories
+FROM SleepActivityClean;
+Findings
+Users average 9,142 steps/day → moderate activity
+
+Average calories burned: 2,467/day → consistent with an active lifestyle
+
+😴 Analysis 2: Sleep Overview
+Query
+sql
+SELECT
+    AVG(minutes_asleep) AS avg_sleep,
+    AVG(total_minutes_in_bed) AS avg_total_minutes_in_bed
+FROM SleepActivityClean;
+Findings
+Average sleep: 395 min (6.6 hours) → insufficient
+
+Time in bed: 428 min (7.1 hours) → low sleep efficiency
+
+🔗 Analysis 3: Activity–Sleep Relationship
+Query
+sql
+SELECT
+    AVG(total_steps) AS avg_steps,
+    AVG(minutes_asleep) AS avg_sleep
+FROM SleepActivityClean;
+Findings
+More steps do not guarantee better sleep
+
+Very active users sleep less (fatigue/overtraining)
+
+Sedentary users sleep more but with lower quality
+
+⏱️ Analysis 4: Insufficient Sleep (<7 hours)
+Query
+sql
+SELECT
+    user_id,
+    COUNT(*) AS total_days,
+    SUM(CASE WHEN minutes_asleep < 420 THEN 1 ELSE 0 END) AS low_sleep_days,
+    ROUND(
+        SUM(CASE WHEN minutes_asleep < 420 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2
+    ) AS low_sleep_percentage
+FROM SleepActivityClean
+GROUP BY user_id
+ORDER BY low_sleep_percentage DESC;
+Findings
+5 users sleep <7 hours on more than 50% of days
+
+Indicates chronic insufficient rest
+
+Worst days: Monday, Thursday, Friday → stress + social factors
+
+📊 Analysis 5: Overall Dataset Trends
+Global averages
+sql
+SELECT
+    AVG(total_steps),
+    AVG(calories),
+    AVG(minutes_asleep),
+    AVG(total_minutes_in_bed)
+FROM SleepActivityClean;
+Variability
+sql
+SELECT
+    STDDEV(total_steps),
+    STDDEV(calories),
+    STDDEV(minutes_asleep)
+FROM SleepActivityClean;
+Activity distribution
+sql
+SELECT
+    CASE
+        WHEN total_steps < 5000 THEN 'Down'
+        WHEN total_steps BETWEEN 5000 AND 9999 THEN 'Reasonable'
+        ELSE 'High'
+    END AS activity_level,
+    COUNT(*) AS days
+FROM SleepActivityClean
+GROUP BY activity_level;
+Sleep distribution
+sql
+SELECT
+    CASE
+        WHEN minutes_asleep < 429 THEN 'low_sleep'
+        ELSE 'good_sleep'
+    END AS sleep_category,
+    COUNT(*) AS days
+FROM SleepActivityClean
+GROUP BY sleep_category;
+Key findings
+High variability → very different lifestyles
+
+Moderate/high activity dominate
+
+Sleep quality inconsistent
+
+Sleeping more ≠ sleeping better
+
+💡 Final Recommendations for Bellabeat
+Improve sleep
+Night reminders
+
+Personalized relaxation routines
+
+Low sleep efficiency alerts
+
+Improve activity
+Progressive goals for sedentary users
+
+Moderate routines to avoid overtraining
+
+Positive reinforcement for active users
+
+Day‑specific interventions
+Monday, Thursday, Friday → stress‑focused strategies
+
+Weekends → promote active rest
+
+Device usage
+Sync reminders
+
+Education on key metrics
+
+📌 Conclusion
+Bellabeat users show active lifestyles but inconsistent sleep patterns and low sleep efficiency.
+The variability across users highlights the need for personalized recommendations.
+These insights help Bellabeat design strategies to improve overall well‑being.
